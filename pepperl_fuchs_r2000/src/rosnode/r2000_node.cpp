@@ -121,12 +121,13 @@ bool R2000Node::connect()
     ros::Time before_sync_time=ros::Time::now();
     int64_t offset_nano=0;
     int number_of_sync_measurements=100;
+    double measurement_duration;
 
     for (int i = 0; i < number_of_sync_measurements; i++ ){
       ros::Time time_before_measurement=ros::Time::now();
       std::string raw_lidar_time = driver_->getParameter("system_time_raw");
       ros::Time time_after_measurement=ros::Time::now();
-      double measurement_duration=(time_after_measurement-time_before_measurement).toSec();
+      measurement_duration=(time_after_measurement-time_before_measurement).toSec();
 
       unsigned long long int raw_time_long = std::strtoull(raw_lidar_time.c_str(), NULL, 10);
       unsigned long long int raw_time_long_sec=raw_time_long >> 32;
@@ -144,15 +145,15 @@ bool R2000Node::connect()
     ros::Duration measure_offset_averaged(offset_nano*0.000000001);
     lidar_start_time = before_sync_time + measure_offset_averaged;
 
-    std::cout << "LIDAR start time for SYNC:" << std::endl;
-    std::cout << lidar_start_time.toSec() << std::endl;
-
-
+    std::cout << "LIDAR start time for SYNC (nSec) :" << std::endl;
+    std::cout << lidar_start_time.toNSec() << std::endl;
+    std::cout << "MAX SYC error(Sec) :" << std::endl;
+    std::cout << measurement_duration/2.0 << std::endl;
 
     // Start capturing scanner data
     //-------------------------------------------------------------------------
     std::cout << "Starting capturing: ";
-    if( driver_->startCapturingTCP(start_angle_,max_num_points_scan_) )
+    if( driver_->startCapturingUDP(start_angle_,max_num_points_scan_) )
         std::cout << "OK" << std::endl;
     else
     {

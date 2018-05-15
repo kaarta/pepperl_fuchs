@@ -54,7 +54,7 @@ private:
     bool connect();
 
     //! Time callback function for getting data from the driver and sending them out
-    void getScanData( const ros::TimerEvent& e);
+    void getScanData(const ros::TimerEvent &e);
 
     //! Internal ROS node handle
     ros::NodeHandle nh_;
