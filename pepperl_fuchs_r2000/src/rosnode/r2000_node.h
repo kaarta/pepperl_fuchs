@@ -32,6 +32,7 @@
 
 #include <ros/ros.h>
 #include <std_msgs/String.h>
+#include <stdlib.h>
 
 namespace pepperl_fuchs {
 class R2000Driver;
@@ -94,6 +95,12 @@ private:
 
     //! latency offset on the timestamp
     double latency_offset_;
+
+    //! use synchronization between lidar and ros clock
+    bool synchronize_time_;
+
+    //! time at which the lidar clock started for clock sync
+    ros::Time lidar_start_time;
 
     //! Pointer to driver
     R2000Driver* driver_;

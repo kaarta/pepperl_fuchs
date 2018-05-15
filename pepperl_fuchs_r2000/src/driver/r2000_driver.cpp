@@ -226,6 +226,14 @@ const std::map< std::string, std::string >& R2000Driver::getParameters()
     return parameters_;
 }
 
+const std::string R2000Driver::getParameter(std::string param)
+{
+    boost::optional< std::string > return_param;
+    if( command_interface_ )
+        return_param = command_interface_->getParameter(param);
+    return return_param.value();
+}
+
 //-----------------------------------------------------------------------------
 bool R2000Driver::setScanFrequency(unsigned int frequency)
 {

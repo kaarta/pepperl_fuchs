@@ -48,6 +48,7 @@ R2000Node::R2000Node():nh_("~")
     nh_.param("hmi_application_bitmap",hmi_application_bitmap_,std::string(""));
     nh_.param("hmi_display_mode",hmi_display_mode_,std::string(""));
     nh_.param("latency_offset",latency_offset_,0.0);
+    nh_.param("synchronize_time",synchronize_time_,true);
 
     if( scanner_ip_ == "" )
     {
@@ -108,11 +109,45 @@ bool R2000Node::connect()
     }
 
 
+
     std::cout << "Current scanner settings:" << std::endl;
     std::cout << "============================================================" << std::endl;
     for( const auto& p : params )
         std::cout << p.first << " : " << p.second << std::endl;
     std::cout << "============================================================" << std::endl;
+
+    // Clock sync procedure
+    //-------------------------------------------------------------------------
+    ros::Time before_sync_time=ros::Time::now();
+    int64_t offset_nano=0;
+    int number_of_sync_measurements=100;
+
+    for (int i = 0; i < number_of_sync_measurements; i++ ){
+      ros::Time time_before_measurement=ros::Time::now();
+      std::string raw_lidar_time = driver_->getParameter("system_time_raw");
+      ros::Time time_after_measurement=ros::Time::now();
+      double measurement_duration=(time_after_measurement-time_before_measurement).toSec();
+
+      unsigned long long int raw_time_long = std::strtoull(raw_lidar_time.c_str(), NULL, 10);
+      unsigned long long int raw_time_long_sec=raw_time_long >> 32;
+      unsigned long long int raw_time_long_fract_sec=raw_time_long & 0xffffffff;
+      double fract_sec= raw_time_long_fract_sec/(std::pow(2,32));
+
+      ros::Time lidar_time;
+      lidar_time.fromSec(raw_time_long_sec);
+      lidar_time=lidar_time + ros::Duration(fract_sec);
+      ros::Duration lidar_start_time_offset = (time_before_measurement+ros::Duration(measurement_duration/2))-lidar_time;
+      ros::Duration measure_offset=lidar_start_time_offset - ros::Duration(before_sync_time.toSec());
+      offset_nano=offset_nano+measure_offset.toNSec();
+    }
+    offset_nano=offset_nano/number_of_sync_measurements;
+    ros::Duration measure_offset_averaged(offset_nano*0.000000001);
+    lidar_start_time = before_sync_time + measure_offset_averaged;
+
+    std::cout << "LIDAR start time for SYNC:" << std::endl;
+    std::cout << lidar_start_time.toSec() << std::endl;
+
+
 
     // Start capturing scanner data
     //-------------------------------------------------------------------------
@@ -124,6 +159,7 @@ bool R2000Node::connect()
         std::cout << "FAILED!" << std::endl;
         return false;
     }
+
     return true;
 }
 
@@ -143,9 +179,23 @@ void R2000Node::getScanData(const ros::TimerEvent &e)
     if( scandata.amplitude_data.empty() || scandata.distance_data.empty() || scandata.headers.empty() )
         return;
 
+    // Get the measurement time stamp
+    //-------------------------------------------------------------------------
+    unsigned long long int raw_time_long = scandata.headers[0].timestamp_raw;
+    unsigned long long int raw_time_long_sec=raw_time_long >> 32;
+    unsigned long long int raw_time_long_fract_sec=raw_time_long & 0xffffffff;
+    double fract_sec= raw_time_long_fract_sec/(std::pow(2,32));
+
+    ros::Duration measurement_time;
+    measurement_time.fromSec(raw_time_long_sec);
+    measurement_time=measurement_time + ros::Duration(fract_sec);
+
+//    std::cout << "Measurement stamp in lidar clock: " << std::endl;
+//    std::cout << measurement_time.toSec() << std::endl;
+
     sensor_msgs::LaserScan scanmsg;
     scanmsg.header.frame_id = frame_id_;
-    scanmsg.header.stamp = ros::Time::now()+ ros::Duration(latency_offset_);
+    scanmsg.header.stamp = lidar_start_time + measurement_time + ros::Duration(latency_offset_);
 
     scanmsg.angle_min = double(scandata.headers[0].first_angle)/10000.0/180.0*M_PI;
     scanmsg.angle_max = scanmsg.angle_min + double(scandata.distance_data.size())/double(samples_per_scan_)*2*M_PI;

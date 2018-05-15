@@ -92,6 +92,10 @@ public:
     //! @returns A key->value map with parametername->value
     const std::map< std::string, std::string >& getParameters();
 
+    //! Read the specified parameter value from the scanner
+    //! @returns A key->value map with parametername->value
+    const std::string getParameter(std::string param);
+
     //! Get cached parameter values of the scanner
     //! @returns A key->value map with parametername->value
     const std::map< std::string, std::string >& getParametersCached() const {return parameters_;}
