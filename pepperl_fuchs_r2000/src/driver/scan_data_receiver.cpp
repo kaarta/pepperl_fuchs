@@ -286,7 +286,7 @@ ScanData ScanDataReceiver::getFullScan()
     std::unique_lock<std::mutex> lock(data_mutex_);
     while( checkConnection() && isConnected() && scan_data_.size()<2 )
     {
-        data_notifier_.wait_for(lock, std::chrono::seconds(1));
+        data_notifier_.wait_for(lock, std::chrono::milliseconds(1));
     }
     ScanData data;
     if( scan_data_.size() >= 2 && isConnected() )

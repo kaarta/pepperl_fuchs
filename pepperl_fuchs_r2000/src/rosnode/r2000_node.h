@@ -53,8 +53,12 @@ private:
     //! @returns True on success, false otherwise
     bool connect();
 
+    //! Measure the time offset between lidar internal clock and ros time
+    //! @returns a ros duration that needs to be added to the lidar internal clock to convert it to ros time
+    ros::Duration getTimeOffset();
+
     //! Time callback function for getting data from the driver and sending them out
-    void getScanData(const ros::TimerEvent &e);
+    void getScanData();
 
     //! Internal ROS node handle
     ros::NodeHandle nh_;
@@ -100,7 +104,7 @@ private:
     bool synchronize_time_;
 
     //! time at which the lidar clock started for clock sync
-    ros::Time lidar_start_time;
+    ros::Duration lidar_start_time;
 
     //! Pointer to driver
     R2000Driver* driver_;
