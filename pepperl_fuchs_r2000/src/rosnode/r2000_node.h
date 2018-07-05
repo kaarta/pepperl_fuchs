@@ -33,6 +33,7 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <stdlib.h>
+#include <cstdlib>
 
 namespace pepperl_fuchs {
 class R2000Driver;
@@ -44,6 +45,9 @@ class R2000Node
 public:
     //! Initialize and connect to laser range finder
     R2000Node();
+
+    //! Destructor, close the connection
+    ~R2000Node();
 
     //! Callback function for control commands
     void cmdMsgCallback( const std_msgs::StringConstPtr& msg );

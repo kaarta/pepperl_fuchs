@@ -73,6 +73,12 @@ R2000Node::R2000Node():nh_("~")
     }
 }
 
+R2000Node::~R2000Node()
+{
+  ROS_INFO("Disconnecting R2000");
+  driver_->disconnect();
+}
+
 //-----------------------------------------------------------------------------
 bool R2000Node::connect()
 {
@@ -200,12 +206,13 @@ void R2000Node::getScanData()
 {
     if( !driver_->isCapturing() )
     {
-        std::cout << "ERROR: Laser range finder disconnected. Trying to reconnect..." << std::endl;
-        while( !connect() )
-        {
-            std::cout << "ERROR: Reconnect failed. Trying again in 2 seconds..." << std::endl;
-            usleep((2*1000000));
-        }
+        std::cout << "ERROR: Laser range finder disconnected. Exiting" << std::endl;
+        std::exit(0);
+//        while( !connect() )
+//        {
+//            std::cout << "ERROR: Reconnect failed. Trying again in 2 seconds..." << std::endl;
+//            usleep((2*1000000));
+//        }
     }
     //Syncs clock before getting measurement
     lidar_start_time=getTimeOffset();
