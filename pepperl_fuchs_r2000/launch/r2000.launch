@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="frame_id" default="/scan"/>
-  <arg name="scanner_ip" default="192.168.16.10"/>
-  <arg name="scan_frequency" default="35"/>
+  <arg name="scanner_ip" default="10.0.10.9"/>
+  <arg name="scan_frequency" default="40"/>
   <arg name="samples_per_scan" default="3600"/>
   <arg name="start_angle" default="-1800000"/>
   <arg name="max_num_points_scan" default="1200"/>
@@ -19,9 +19,11 @@
     <param name="max_num_points_scan" value="$(arg max_num_points_scan)"/>
     <param name="hmi_application_bitmap" value="$(arg hmi_application_bitmap)"/>
     <param name="hmi_display_mode" value="$(arg hmi_display_mode)"/>
+    <remap from="/r2000_node/scan" to="/scan" />
   </node>
 
   <!-- RVIZ -->
+
   <node pkg="rviz" type="rviz" name="$(anon rviz)" respawn="false" output="screen" args="-d $(find pepperl_fuchs_r2000)/rviz/rviz.rviz"/>
 
 </launch>
