@@ -3,7 +3,7 @@
   <arg name="frame_id" default="/scan"/>
   <arg name="scanner_ip" default="10.0.10.9"/>
   <arg name="scan_frequency" default="40"/>
-  <arg name="samples_per_scan" default="3600"/>
+  <arg name="samples_per_scan" default="6300"/>
   <arg name="start_angle" default="-1800000"/>
   <arg name="max_num_points_scan" default="$(arg samples_per_scan)"/>
   <arg name="hmi_application_bitmap" default=""/>

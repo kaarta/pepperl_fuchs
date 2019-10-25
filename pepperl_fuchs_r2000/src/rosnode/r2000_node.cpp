@@ -34,7 +34,7 @@
 namespace pepperl_fuchs {
 
 //-----------------------------------------------------------------------------
-R2000Node::R2000Node():nh_("~")
+R2000Node::R2000Node():nh_("~"), last_imu_lidar_offset_(0), last_valid_scan_time_(0), last_imu_time_diff_(0)
 {
     driver_ = 0;
     // Reading and checking parameters
@@ -63,6 +63,11 @@ R2000Node::R2000Node():nh_("~")
     //-------------------------------------------------------------------------
     scan_publisher_ = nh_.advertise<sensor_msgs::LaserScan>("scan",100);
     cmd_subscriber_ = nh_.subscribe("control_command",100,&R2000Node::cmdMsgCallback,this);
+
+    imu_lidar_offset_ = nh_.subscribe("/lidar_imu_time_diff", 2, &R2000Node::handleLidarIMUPulseTimeOffset, this);
+    imu_time_ = nh_.subscribe("/imu/time", 2, &R2000Node::handleLastImuTime, this);
+    imu_time_diff_ = nh_.subscribe("/imu/time_diff", 2, &R2000Node::handleImuTimeDiff, this);
+    
     //get_scan_data_timer_ = nh_.createTimer(ros::Duration(1/(2*std::atof(driver_->getParametersCached().at("scan_frequency").c_str()))), &R2000Node::getScanData, this);
 
     std::cout << "Starting measurement pooling" << std::endl;
@@ -71,6 +76,21 @@ R2000Node::R2000Node():nh_("~")
       getScanData();
       ros::spinOnce();
     }
+}
+
+void R2000Node::handleLidarIMUPulseTimeOffset(const std_msgs::Float32& msg){
+    last_imu_lidar_offset_ = msg.data;
+    ROS_INFO_STREAM("Got pulse offset: " << msg.data);
+}
+
+void R2000Node::handleLastImuTime(const std_msgs::Float64& msg){
+    last_imu_time_ = msg.data;
+    ROS_INFO_STREAM("Got imu time: " << ros::Time(last_imu_time_));
+}
+
+void R2000Node::handleImuTimeDiff(const std_msgs::Float64& msg){
+    last_imu_time_diff_ = msg.data;
+    ROS_INFO_STREAM_ONCE("Got imu time diff: " << ros::Time(last_imu_time_diff_));
 }
 
 R2000Node::~R2000Node()
@@ -201,6 +221,34 @@ ros::Duration R2000Node::getTimeOffset()
   return lidar_start_time_offset;
 }
 
+double R2000Node::getTimestamp(double scanner_ts)
+{
+    //0.0 case: Tpf = Timu + Toffset (+ 1 if new imu not yet arrived)
+    //0.1 case: Tpf = Timu + Toffset + 0.1
+
+    double res = last_imu_time_ + (last_imu_lidar_offset_ + (scanner_ts - floor(scanner_ts)));
+    if (res > last_imu_time_ + 1){
+        res -= 1;
+    }
+    else if(res < last_imu_time_){
+        res += 1;
+    }
+    static double last = res;
+    if (res < last){
+        ROS_FATAL_STREAM("new scan timestamp "<<ros::Time(res) << " before previous timestamp " << ros::Time(last));
+        exit(1);
+    }
+    // // add in the offset from imu to lidar internal times
+    // res += last_imu_time_ - floor(scanner_ts);
+    // // // add in the offset between imu and lidar pps
+    // res += last_imu_lidar_offset_;
+    // // add in the fractional second that was removed earlier? why not just not remove it? let's see
+    // res += scanner_ts - floor(scanner_ts);
+    // // apply offset from imu time to sys time
+    // // res += last_imu_time_diff_;
+    return res;
+}
+
 //-----------------------------------------------------------------------------
 void R2000Node::getScanData()
 {
@@ -215,7 +263,7 @@ void R2000Node::getScanData()
 //        }
     }
     //Syncs clock before getting measurement
-    lidar_start_time=getTimeOffset();
+    // lidar_start_time=getTimeOffset();
     auto scandata = driver_->getFullScan();
     if( scandata.amplitude_data.empty() || scandata.distance_data.empty() || scandata.headers.empty() )
         return;
@@ -229,14 +277,18 @@ void R2000Node::getScanData()
 
     ros::Time measurement_time;
     measurement_time.fromSec(raw_time_long_sec);
-    measurement_time=measurement_time + ros::Duration(fract_sec);
+    measurement_time = measurement_time + ros::Duration(fract_sec);
 
 //    std::cout << "Measurement stamp in lidar clock: " << std::endl;
 //    std::cout << measurement_time.toSec() << std::endl;
 
     sensor_msgs::LaserScan scanmsg;
     scanmsg.header.frame_id = frame_id_;
-    scanmsg.header.stamp = measurement_time + lidar_start_time ;
+    // scanmsg.header.stamp = measurement_time + lidar_start_time ;
+    double stamp = getTimestamp(measurement_time.toSec());
+
+    ROS_INFO_STREAM("Timestamp: " << ros::Time(stamp) << " : " << measurement_time << " : " << ros::Time(last_imu_time_));
+    scanmsg.header.stamp = ros::Time(stamp);
 
     scanmsg.angle_min = double(scandata.headers[0].first_angle)/10000.0/180.0*M_PI;
     scanmsg.angle_max = scanmsg.angle_min + double(scandata.distance_data.size())/double(samples_per_scan_)*2*M_PI;

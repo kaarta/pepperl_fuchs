@@ -31,6 +31,8 @@
 #define R2000_NODE_H
 
 #include <ros/ros.h>
+#include <std_msgs/Float32.h>
+#include <std_msgs/Float64.h>
 #include <std_msgs/String.h>
 #include <stdlib.h>
 #include <cstdlib>
@@ -75,6 +77,25 @@ private:
 
     //! ROS subscriber for receiving control commands
     ros::Subscriber cmd_subscriber_;
+
+    //! ROS subscriber for imu offset time
+    ros::Subscriber imu_lidar_offset_;
+    void handleLidarIMUPulseTimeOffset(const std_msgs::Float32& msg);
+    float last_imu_lidar_offset_;
+
+    //! ROS subscriber for imu offset time
+    ros::Subscriber imu_time_;
+    void handleLastImuTime(const std_msgs::Float64& msg);
+    double last_imu_time_;
+
+    //! ROS subscriber for imu offset time
+    ros::Subscriber imu_time_diff_;
+    void handleImuTimeDiff(const std_msgs::Float64& msg);
+    double last_imu_time_diff_;
+
+    //! get the timestamp wrt IMU time
+    double getTimestamp(double scanner_ts);
+    double last_valid_scan_time_;
 
     //! frame_id of sensor_msgs/Laserscan messages
     std::string frame_id_;
