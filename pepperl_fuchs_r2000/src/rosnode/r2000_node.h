@@ -88,11 +88,6 @@ private:
     void handleLastImuTime(const std_msgs::Float64& msg);
     double last_imu_time_;
 
-    //! ROS subscriber for imu offset time
-    ros::Subscriber imu_time_diff_;
-    void handleImuTimeDiff(const std_msgs::Float64& msg);
-    double last_imu_time_diff_;
-
     //! get the timestamp wrt IMU time
     double getTimestamp(double scanner_ts);
     double last_valid_scan_time_;

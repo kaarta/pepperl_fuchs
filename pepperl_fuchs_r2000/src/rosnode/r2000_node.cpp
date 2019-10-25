@@ -34,7 +34,7 @@
 namespace pepperl_fuchs {
 
 //-----------------------------------------------------------------------------
-R2000Node::R2000Node():nh_("~"), last_imu_lidar_offset_(0), last_valid_scan_time_(0), last_imu_time_diff_(0)
+R2000Node::R2000Node():nh_("~"), last_imu_lidar_offset_(0), last_valid_scan_time_(0)
 {
     driver_ = 0;
     // Reading and checking parameters
@@ -86,11 +86,6 @@ void R2000Node::handleLidarIMUPulseTimeOffset(const std_msgs::Float32& msg){
 void R2000Node::handleLastImuTime(const std_msgs::Float64& msg){
     last_imu_time_ = msg.data;
     ROS_INFO_STREAM("Got imu time: " << ros::Time(last_imu_time_));
-}
-
-void R2000Node::handleImuTimeDiff(const std_msgs::Float64& msg){
-    last_imu_time_diff_ = msg.data;
-    ROS_INFO_STREAM_ONCE("Got imu time diff: " << ros::Time(last_imu_time_diff_));
 }
 
 R2000Node::~R2000Node()
@@ -244,8 +239,6 @@ double R2000Node::getTimestamp(double scanner_ts)
     // res += last_imu_lidar_offset_;
     // // add in the fractional second that was removed earlier? why not just not remove it? let's see
     // res += scanner_ts - floor(scanner_ts);
-    // // apply offset from imu time to sys time
-    // // res += last_imu_time_diff_;
     return res;
 }
 
