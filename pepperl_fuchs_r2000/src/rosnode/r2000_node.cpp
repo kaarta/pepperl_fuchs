@@ -66,7 +66,6 @@ R2000Node::R2000Node():nh_("~"), last_imu_lidar_offset_(0), last_valid_scan_time
 
     imu_lidar_offset_ = nh_.subscribe("/lidar_imu_time_diff", 2, &R2000Node::handleLidarIMUPulseTimeOffset, this);
     imu_time_ = nh_.subscribe("/imu/time", 2, &R2000Node::handleLastImuTime, this);
-    imu_time_diff_ = nh_.subscribe("/imu/time_diff", 2, &R2000Node::handleImuTimeDiff, this);
     
     //get_scan_data_timer_ = nh_.createTimer(ros::Duration(1/(2*std::atof(driver_->getParametersCached().at("scan_frequency").c_str()))), &R2000Node::getScanData, this);
 
