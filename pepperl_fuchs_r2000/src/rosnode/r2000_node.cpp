@@ -121,14 +121,38 @@ bool R2000Node::connect()
         }
     }
 
-
-
     std::cout << "Current scanner settings:" << std::endl;
     std::cout << "============================================================" << std::endl;
     for( const auto& p : params )
         std::cout << p.first << " : " << p.second << std::endl;
     std::cout << "============================================================" << std::endl;
 
+
+    std::cout << "setting I/Q parameters" << std::endl;
+    if (!driver_->setIQPolarity(2, "active_low"))
+    {
+        std::cerr << "Could not set I/Q polarity";
+    }
+    if (!driver_->setIQOffDelay(2, 1))
+    {
+        std::cerr << "Could not set I/Q off_delay";
+    }
+    if (!driver_->setIQMode(2, "output_push_pull"))
+    {
+        std::cerr << "Could not set I/Q mode";
+    }
+    if (!driver_->setIQSource(2, "timesync"))
+    {
+        std::cerr << "Could not set I/Q source";
+    }
+    if (!driver_->setIQTimesyncInterval(1000))
+    {
+        std::cerr << "Could not set I/Q timesync interval";
+    }
+    if (!driver_->setIQGlobalEnable(true))
+    {
+        std::cerr << "Could not set I/Q global enable";
+    }
 //    // Clock sync procedure
 //    //-------------------------------------------------------------------------
 //    ros::Time before_sync_time=ros::Time::now();
